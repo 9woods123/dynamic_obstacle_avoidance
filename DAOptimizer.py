@@ -53,7 +53,7 @@ class DAOptimizer:
 
         self.__smooth_cost_weight=1
         self.__collision_cost_weight=0.5
-        self.__terminal_cost_weight=0.5
+        self.__terminal_cost_weight=0.25
 
         self.__delta_t=0.25 ## delta_t between two near path points
         self.vel_=4    ## const motion
@@ -88,20 +88,6 @@ class DAOptimizer:
         self.__obstacle.append(dyna_ob)
 
 
-
-    def setObstacleMap(self,way_point_list):
-        self.__static_obstacles = np.array([[point.x() ,point.y(),point.z() ]for point in way_point_list])
-        
-        
-
-    def get_obstacle_position(self, time):
-        if self.__obstacle is None:
-            print("please setObstacle before using function get_obstacle_position()")
-        self.__obstacle.get_obstacle_position_by_time(time)
-
-
-
-
     def init_path(self):
         if  self.__goal ==None or self.__start==None:
             print("please setGoal and setStart before init_path")
@@ -127,9 +113,8 @@ class DAOptimizer:
         return self.__init_path_points  
 
 
-    
 
-    def smooth(self,init_path=None,obstacle_set=None):
+    def smooth(self,init_path=None):
         
         init_path=self.__init_path_points
         iterations = 0
@@ -197,7 +182,6 @@ class DAOptimizer:
         return new_path
 
 
-
     def smoothness_term(self,xim2, xim1, xi, xip1, xip2):
 
         cost=np.linalg.norm((xip2-xip1) - (xip1 -xi))
@@ -210,19 +194,15 @@ class DAOptimizer:
         terminal_point = np.array([ self.__init_path_points[-1].x(),  
                                             self.__init_path_points[-1].y(), 
                                             self.__init_path_points[-1].z()])
-        
         cost=np.linalg.norm(terminal_point-endpoint)**2
-
         gradient=endpoint - terminal_point
 
         return gradient,cost
-
-
+    
 
     def obstacle_term(self,xi,T):
         gradient = np.zeros(3)
         cost=0
-
 
         d_threshold=self.safe_distance
 
@@ -245,7 +225,6 @@ class DAOptimizer:
 
 
         return gradient,cost
-
 
 
 def plot_experiment(init_path,opt_path):
@@ -281,8 +260,6 @@ def plot_experiment(init_path,opt_path):
     plt.text(opt_path_coords_x[0], opt_path_coords_y[0], 'Start', fontsize=25, color='red', ha='left', va='bottom')
     plt.text(opt_path_coords_x[-1], opt_path_coords_y[-1]-0.5, 'Goal', fontsize=25, color='green', ha='right', va='bottom')
     plt.show()
-
-
 
 
 
@@ -341,22 +318,23 @@ def main():
     ob_2 = DynOb(6,1,z=0,yaw=0.3*math.pi, vel=1.5)
     ob_3 = DynOb(20,7,z=0,yaw=0.9*math.pi, vel=3)
 
-    algo_test.setStart(start_point)
-    algo_test.setGoal(goal_point)
+
+
     algo_test.addDyanmicObstacle(ob_1)
     algo_test.addDyanmicObstacle(ob_2)
     algo_test.addDyanmicObstacle(ob_3)
+    algo_test.setStart(start_point)
+    algo_test.setGoal(goal_point)
 
     init_path_=algo_test.init_path()
     
     smooth_start_time = time.time()  # 
     opt_path_=algo_test.smooth()
     smooth_end_time = time.time()  # 
+    
     print("waypoint size of path: ", len(opt_path_))
     print("time oost: ",smooth_end_time-smooth_start_time )
     plot_experiment(init_path_,opt_path_)
-
-
 
     plot_gif([ob_1,ob_2,ob_3],opt_path_)
     
@@ -365,47 +343,3 @@ if __name__ == "__main__":
     main()
 
 
-
-
-# def plot_experiment(init_path,opt_path,static_obstacles):
-
-# init_path_coords_x = np.array([point.x() for point in init_path])
-# init_path_coords_y = np.array([point.y() for point in init_path])
-
-# opt_path_coords_x = np.array([point.x() for point in opt_path])
-# opt_path_coords_y = np.array([point.y() for point in opt_path])
-
-# ob_coords_x = np.array([point.x() for point in static_obstacles])
-# ob_coords_y = np.array([point.y() for point in static_obstacles])
-
-# # plot_circle((2, 2), 1)
-# plt.figure(figsize=(8,8))
-# plt.clf()
-# plt.title("Planned Path",fontsize=25)
-# plt.axis('equal')  # Set equal aspect ratio
-# plt.plot(init_path_coords_x,init_path_coords_y, '--', linewidth=4)
-
-# plt.plot(opt_path_coords_x,opt_path_coords_y, '.-', linewidth=3)
-
-#     # Plot circles for static obstacles
-# for i in range(len(ob_coords_x)):
-#     circle = Circle((ob_coords_x[i], ob_coords_y[i]), radius=OB_R, fc='red', ec='black')
-#     plt.gca().add_patch(circle)
-
-
-# # 调整标签的字体大小
-# plt.xlabel('x (m)', fontsize=25)
-# plt.ylabel('y (m)', fontsize=25)
-
-# # 调整图例的字体大小
-# plt.legend(['init_path', 'opt_path'], fontsize=20)
-
-
-# plt.grid()
-# # 调整刻度的字体大小
-# plt.xticks(fontsize=20)
-# plt.yticks(fontsize=20)
-# plt.text(opt_path_coords_x[0], opt_path_coords_y[0], 'Start', fontsize=25, color='red', ha='left', va='bottom')
-# plt.text(opt_path_coords_x[-1], opt_path_coords_y[-1]-0.5, 'Goal', fontsize=25, color='green', ha='right', va='bottom')
-# plt.savefig('data_file/init_path.pdf',tight_layout='tight', bbox_inches='tight')
-# plt.show()
