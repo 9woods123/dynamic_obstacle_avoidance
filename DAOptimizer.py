@@ -9,8 +9,6 @@ import time
 from matplotlib.animation import FuncAnimation
 
 ###  dynamic obstacle model
-
-
 class DynOb:
     
     def __init__(self,x,y,z=0,yaw=0,vel=0):
@@ -97,7 +95,6 @@ class DAOptimizer:
         distance=wayPoint.getDistance(self.__start, self.__goal)
         num_steps = int(distance / self.vel_ / self.__delta_t)        # 计算时间步数,向下取整数。
 
-
         self.__init_path_points=[]                                                             # 生成路径点
 
         for curr_step in range(num_steps+1):
@@ -154,7 +151,9 @@ class DAOptimizer:
                 #                          self.__collision_cost_weight*collision_cost
                 # print("total_cost=",total_cost)
 
+
                 xi = xi - alpha * correction
+
                 new_path[i]=wayPoint( xi[0], xi[1], xi[2],reach_time=curr_time)
 
                 # temp_path[i]=wayPoint( xi[0], xi[1], xi[2])
@@ -176,9 +175,16 @@ class DAOptimizer:
             new_path[path_length-1]=wayPoint( xNim1[0], xNim1[1], xNim1[2],reach_time=new_path[path_length-1].get_time())
             new_path[path_length-2]=wayPoint( xNim2[0], xNim2[1], xNim2[2],reach_time=new_path[path_length-2].get_time())
 
+            ## 重新调整时间,让速度沿着velocity profile = self.vel_
+            for i in range(2, path_length -1):
+                xim1 = np.array([new_path[i - 1].x(), new_path[i - 1].y(), new_path[i - 1].z()])
+                xi = np.array([new_path[i].x(), new_path[i].y(), new_path[i].z()])
+                curr_time=new_path[i - 1].get_time()+np.linalg.norm(xi-xim1)/self.vel_
+                new_path[i].set_time(curr_time)
+
 
             iterations += 1
-        
+            
         return new_path
 
 
@@ -304,8 +310,6 @@ def plot_gif(dyn_ob_list, opt_path):
     plt.show()
 
 
-
-
 def main():
 
     algo_test=DAOptimizer()
@@ -332,6 +336,15 @@ def main():
     opt_path_=algo_test.smooth()
     smooth_end_time = time.time()  # 
     
+
+
+    # for i in range(1, len(opt_path_) -1):
+
+    #     xim1 = np.array([opt_path_[i - 1].x(), opt_path_[i - 1].y(), opt_path_[i - 1].z()])
+    #     xi = np.array([opt_path_[i].x(), opt_path_[i].y(), opt_path_[i].z()])
+    #     curr_vel=np.linalg.norm(xi-xim1)/(opt_path_[i].get_time()-opt_path_[i - 1].get_time())
+    #     print("curr_vel:",curr_vel)
+
     print("waypoint size of path: ", len(opt_path_))
     print("time oost: ",smooth_end_time-smooth_start_time )
     plot_experiment(init_path_,opt_path_)
